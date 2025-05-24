@@ -12,7 +12,7 @@ I will structure the code in the following way:
 
 In the YAML configuration there will be a section for each script that I will create, with the list of actions that the script will perform, and for each action the parameters that the script will use.
 
-For example, the scripts "list_this_week_tasks" will have the following configuration section in obsidian_notes_manager.yaml:
+For example, the scripts `list_this_week_tasks` will have the following configuration section in obsidian_notes_manager.yaml:
 
 
 ```yaml
