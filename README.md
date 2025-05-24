@@ -41,12 +41,12 @@ The script that should be run from console to perform the action will be `list_t
 
 This script will read the configuration file `obsidian_notes_manager.yaml` to know which actions to perform and which parameters to use and call the funcions availables in the modules or classes to perform the actions.
 
-Today, 6th of October 2025, I had the idea, so step by step, the code will be created and added to this repository.
+Today, 6th of May 2025, I had the idea, so step by step, the code will be created and added to this repository.
 
 I will use the following rules for myself:
 - I will try to make the code as simple as possible
-- Copilot & ChatGPT will be used to help me write the code
-- Every commit made to this repository will be documented and, above all, will be **really useful for me** in the real life to manage my Obsidian notes.
+- Copilot & ChatGPT will be used **intensively** to help me write the code
+- Every commit made to this repository will be documented and, above all, will be **REALLY USEFUL for me** in the real life to manage my Obsidian notes.
 
 <br><br>
 José Manuel Ciges Regueiro
