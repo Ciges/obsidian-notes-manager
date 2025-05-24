@@ -28,7 +28,10 @@ So in this example the file structure will be like this:
 
 ```
 - 📁 classes
+    - 📄note.py
+    - 📄task.py
 - 📁 modules/
+    - 📄tasks_manager.py
 - 📄 config.ini
 - 📄 obsidian_notes_manager.yaml
 - ⚙️ list_this_week_tasks.py
