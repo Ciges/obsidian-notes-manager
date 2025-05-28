@@ -4,9 +4,9 @@
 
 ### Class "Note"
 - [ ] Create a "Note" class to represent a note
-    - [ ] The main parameter will be the path of the note
+    - [x] The main parameter will be the path of the note
     - [ ] The class should have methods to:
-        - [ ] `get_content()`: Read the content of the note
+        - [x] `get_content()`: Read the content of the note
         - [ ] `search(regex: string)`, `replace(regex_searched: string, regex_replacement: string)`: Search and replace text in the note, using regular expressions
         - [ ] `update_content()`: Write the updated content to the note
         - [ ] `get(property: string)` Read the value of a property of the Obsidian note
