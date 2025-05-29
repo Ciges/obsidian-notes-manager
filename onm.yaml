@@ -1,0 +1,4 @@
+test:
+  - classes.Note.get_content_from_path:
+      args:
+        - "BANDEJA DE ENTRADA"
