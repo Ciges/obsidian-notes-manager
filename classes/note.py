@@ -3,6 +3,26 @@ import configparser
 from typing import Optional
 
 class Note:
+    """
+    A class to represent and interact with Obsidian note files.
+
+    Attributes:
+        path (Optional[str]): The full path to the Obsidian note file.
+        verbose (bool): Flag to enable verbose output for debugging.
+
+    Methods:
+        __init__(path: Optional[str], verbose: bool = False):
+            Initializes the Note object and verifies the file type.
+        _read_file(path: str) -> str:
+            Reads the content of a file and returns it as a string.
+        _calculate_full_path(path: str) -> str:
+            Calculates the full path of the note file, including the vault path and file extension.
+        get_content_from_path(path: str) -> str:
+            Static method to retrieve the content of a note file using a given path.
+        get_content(path: Optional[str] = None) -> str:
+            Retrieves the content of the note file, using the instance's path or a provided path.
+    """
+
     def __init__(self, path: Optional[str], verbose: bool = False):
         """
         Initialize the Note object with the path of the Obsidian note file.
