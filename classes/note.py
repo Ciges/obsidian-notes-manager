@@ -1,6 +1,8 @@
 import os
 import configparser
 import json
+import mimetypes
+import time
 from typing import Optional
 
 class Note:
@@ -23,37 +25,6 @@ class Note:
         get_content(path: Optional[str] = None) -> str:
             Retrieves the content of the note file, using the instance's path or a provided path.
     """
-
-    def __init__(self, path: Optional[str], verbose: bool = False):
-        """
-        Initialize the Note object with the path of the Obsidian note file.
-        """
-        self.verbose = verbose
-
-        # Verify the mimetype of the file
-        if path is not None:
-            full_path = Note._calculate_full_path(path)
-            if self.verbose:
-                print(f"Full path: {full_path}")
-            if not os.path.exists(full_path):
-                raise FileNotFoundError(f"The file at {full_path} does not exist.")
-
-            import mimetypes
-            mimetype, _ = mimetypes.guess_type(full_path)
-            if self.verbose:
-                print(f"MIME Type is: {mimetype}")
-            if mimetype is None or not mimetype.startswith('text'):
-                raise ValueError(f"The file at {full_path} is not a text file.")
-
-            self.path = full_path
-
-    @staticmethod
-    def _read_file(path: str) -> str:
-        """
-        Helper method to read the content of a file.
-        """
-        with open(path, 'r', encoding='utf-8') as file:
-            return file.read()
 
     @staticmethod
     def _calculate_full_path(path: str) -> str:
@@ -82,7 +53,56 @@ class Note:
         full_path = Note._calculate_full_path(path)
         if not os.path.exists(full_path):
             raise FileNotFoundError(f"The file at {full_path} does not exist.")
-        return Note._read_file(full_path)
+        
+        with open(full_path, 'r', encoding='utf-8') as file:
+            return file.read()
+
+
+    def __init__(self, path: Optional[str], verbose: bool = False):
+        """
+        Initialize the Note object with the path of the Obsidian note file.
+        """
+        self.verbose = verbose
+
+        # Verify the mimetype of the file
+        if path is not None:
+            full_path = Note._calculate_full_path(path)
+            if self.verbose:
+                print(f"Full path: {full_path}")
+            if not os.path.exists(full_path):
+                raise FileNotFoundError(f"The file at {full_path} does not exist.")
+
+
+            mimetype, _ = mimetypes.guess_type(full_path)
+            if self.verbose:
+                print(f"MIME Type is: {mimetype}")
+            if mimetype is None or not mimetype.startswith('text'):
+                raise ValueError(f"The file at {full_path} is not a text file.")
+
+            self.path = full_path
+
+    def _read_file(self, path: str) -> str:
+        """
+        Helper method to read the content of a file.
+        """
+
+        # Check if the file has been read before and if it has not been modified since then
+        if hasattr(self, '_time_read') and hasattr(self, '_content'):
+            file_modified_time = os.path.getmtime(path)
+            if self.verbose:
+                print(f"File content has not been updated (mtime: {file_modified_time}), returning cached content at {self._time_read}.")
+            if file_modified_time <= self._time_read:
+                return self._content
+        else:
+            with open(path, 'r', encoding='utf-8') as file:
+                self._time_read = time.time()
+                self._content = file.read()
+                if self.verbose:
+                    print(f"File read at {self._time_read}, content length: {len(self._content)} characters.")
+                return self._content
+
+        return ""
+
 
     def get_content(self, path: Optional[str] = None) -> str:
         """
@@ -97,7 +117,7 @@ class Note:
         if not os.path.exists(path):
             raise FileNotFoundError(f"The file at {path} does not exist.")
         
-        return Note._read_file(path)
+        return self._read_file(path)
 
     def __str__(self) -> str:
         """
