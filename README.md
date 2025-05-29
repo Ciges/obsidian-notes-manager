@@ -55,9 +55,9 @@ I will use the following rules for myself:
 ## Version 0.0.1
 
 Created a very simple Note class to represent a note in Obsidian. With these functions:
-- get_content_from_path(path: str) -> str:
+- `get_content_from_path(path: str)`:
     Static method to retrieve the content of a note file using a given path.
-- get_content(path: Optional[str] = None) -> str:
+- `get_content(path: Optional[str] = None)`:
     Retrieves the content of the note file, using the instance's path or a provided path.
 
 The call is made using a MVC pattern. A first version of the controller has been created `orm.py`.
@@ -75,9 +75,6 @@ This is just a POC. When you call the script `test.py`, it will call `orm.py` an
 The calling script `test.py` is just as follows:
 ```python
 from orm import execute
-
-if __name__ == "__main__":
-   execute("onm.yaml", __file__)from orm import execute
 
 if __name__ == "__main__":
    execute("onm.yaml", __file__)
