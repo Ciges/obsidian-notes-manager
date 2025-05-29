@@ -7,9 +7,11 @@
     - [x] The main parameter will be the path of the note
     - [ ] The class should have methods to:
         - [x] `get_content()`: Read the content of the note
+            - [ ] Add comments to for the new functions that read frontmatter and body
         - [ ] `search(regex: string)`, `replace(regex_searched: string, regex_replacement: string)`: Search and replace text in the note, using regular expressions
         - [ ] `update_content()`: Write the updated content to the note
-        - [ ] `get(property: string)` Read the value of a property of the Obsidian note
+        - [x] `get(property: string)` Read the value of a property of the Obsidian note
+            - [ ] Add comments for the new functions that read properties-
         - [ ] `set(property: string, value: any)` Set the value of a property of the Obsidian note
 
 The property read and set methods should work in the frontmatter and in the body of the note.

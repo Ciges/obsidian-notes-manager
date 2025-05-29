@@ -5,5 +5,19 @@
 
 from classes.note import Note
 
-note = Note(path="BANDEJA DE ENTRADA", verbose=True)
-print(note.get_content())
+note = Note(path="BANDEJA DE ENTRADA")
+
+print(f"\nFrontmatter:")
+print(note.get_frontmatter())
+
+print(f"\nTexto:")
+print(note.get_body())
+
+print(f"\nPropiedades de la nota:")
+print(note.get_properties())
+
+print(f"\nPropiedad fileClass:")
+print(note.fileClass)
+
+print(f"\nPropiedad updated:")
+print(note.updated)
