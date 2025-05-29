@@ -10,11 +10,11 @@ I will structure the code in the following way:
 - folder **`classes`**: classes to represent different type of elements
 - folder **`modules`**: python libraries with code to make different kinds of operations
 - **`config.ini`**: configuration file to set global variables
-- **`obsidian_notes_manager.yaml`**: configuration file to set the rules to manage the notes
+- **`orm.py`**: configuration file to set the rules to manage the notes
 
 In the YAML configuration there will be a section for each script that I will create, with the list of actions that the script will perform, and for each action the parameters that the script will use.
 
-For example, the script `list_this_week_tasks`, thought to search and show me the information of all tasks planned for this week, will have the following configuration section in obsidian_notes_manager.yaml:
+For example, the script `list_this_week_tasks`, thought to search and show me the information of all tasks planned for this week, will have the following configuration section in orm.py:
 
 
 ```yaml
@@ -34,7 +34,7 @@ So in this example the file structure will be like this:
 - 📁 modules/
     - 📄tasks_manager.py
 - 📄 config.ini
-- 📄 obsidian_notes_manager.yaml
+- 📄 orm.py
 - ⚙️ list_this_week_tasks.py
 ```
 
@@ -43,7 +43,7 @@ The script that should be run from console to perform the action will be `list_t
 python list_this_week_tasks.py
 ```
 
-This script will read the configuration file `obsidian_notes_manager.yaml` to know which actions to perform and which parameters to use and call the funcions availables in the modules or classes to perform the actions.
+This script will read the configuration file `orm.py` to know which actions to perform and which parameters to use and call the funcions availables in the modules or classes to perform the actions.
 
 Today, 6th of May 2025, I had the idea, so step by step, the code will be created and added to this repository.
 

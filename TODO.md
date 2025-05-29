@@ -32,7 +32,7 @@ The content of the note will be read only when a specific method is called, to a
 
 ## Scripts
 
-- [ ] Create the generic code that will read the configuration file `obsidian_notes_manager.yaml` and execute the actions specified in it
+- [ ] Create the generic code that will read the configuration file `orm.py` and execute the actions specified in it
 
 ## Script "show_note_content.py"
 - [ ] Add the YAML configuration call class Note.get_content()
@@ -41,7 +41,7 @@ The content of the note will be read only when a specific method is called, to a
 - [ ] Add the YAML configuration call class Note.get()
 
 ## Script "mark_tasks_done_older_than_30_days_as_hidden.py"
-- [ ] Add the YAML configuration section to `obsidian_notes_manager.yaml` to call the `mark_tasks_done_older_than_30_days_as_hidden` method of the `TaskManager` class
+- [ ] Add the YAML configuration section to `orm.py` to call the `mark_tasks_done_older_than_30_days_as_hidden` method of the `TaskManager` class
 
 ## Script "list_this_week_tasks.py"
-- [ ] Add the YAML configuration section to `obsidian_notes_manager.yaml` to call the `mark_tasks_done_older_than_30_days_as_hidden` method of the `TaskManager` class
+- [ ] Add the YAML configuration section to `orm.py` to call the `mark_tasks_done_older_than_30_days_as_hidden` method of the `TaskManager` class
