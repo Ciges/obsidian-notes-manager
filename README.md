@@ -80,6 +80,14 @@ if __name__ == "__main__":
    execute("onm.yaml", __file__)
 ```
 
+So, to run the script, you just need to execute:
+```bash
+python test.py
+```
+
+And it will retrieve the content of the note file located in the path "BANDEJA DE ENTRADA".
+
+
 
 <br><br>
 José Manuel Ciges Regueiro
