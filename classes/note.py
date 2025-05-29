@@ -62,7 +62,7 @@ class Note:
         """
         if not os.path.isabs(path):
             config = configparser.ConfigParser()
-            config.read(os.path.join(os.path.dirname(__file__), '..', 'config.ini'))
+            config.read(os.path.join(os.path.dirname(__file__), '..', 'onm', 'config.ini'))
             vault_path = config.get('Obsidian', 'vault_path', fallback='')
             if not vault_path:
                 raise ValueError("vault_path is not set in config.ini")
@@ -106,10 +106,10 @@ class Note:
         """
         # Load messages from JSON file
         config = configparser.ConfigParser()
-        config.read(os.path.join(os.path.dirname(__file__), '..', 'config.ini'))
+        config.read(os.path.join(os.path.dirname(__file__), 'onm', 'config.ini'))
         language_file = config.get('Language', 'file', fallback='messages_es.json')
 
-        with open(os.path.join(os.path.dirname(__file__), '..', language_file), 'r', encoding='utf-8') as file:
+        with open(os.path.join(os.path.dirname(__file__), '..', 'onm', language_file), 'r', encoding='utf-8') as file:
             messages = json.load(file)
 
         if self.path:
