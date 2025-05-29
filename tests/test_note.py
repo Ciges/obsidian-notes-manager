@@ -9,14 +9,14 @@ class TestNote(unittest.TestCase):
             self.skipTest("BANDEJA DE ENTRADA note file not found.")
 
     def test_get_content_with_instance_and_path(self):
-        note = Note()
+        note = Note(path=None)
         try:
             note.get_content("BANDEJA DE ENTRADA")
         except FileNotFoundError:
             self.skipTest("BANDEJA DE ENTRADA note file not found.")
 
     def test_get_content_with_instance(self):
-        note = Note("BANDEJA DE ENTRADA")
+        note = Note(path="BANDEJA DE ENTRADA")
         try:
             note.get_content()
         except FileNotFoundError:
