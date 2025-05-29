@@ -1,16 +1,33 @@
 import os
 import configparser
+from typing import Optional
 
 class Note:
-    def __init__(self, path=None):
+    def __init__(self, path: Optional[str], verbose: bool = False):
         """
         Initialize the Note object with the path of the Obsidian note file.
         """
+        self.verbose = verbose
+
+        # Verify the mimetype of the file
         if path is not None:
-            self.path = Note._calculate_full_path(path)
+            full_path = Note._calculate_full_path(path)
+            if self.verbose:
+                print(f"Full path: {full_path}")
+            if not os.path.exists(full_path):
+                raise FileNotFoundError(f"The file at {full_path} does not exist.")
+
+            import mimetypes
+            mimetype, _ = mimetypes.guess_type(full_path)
+            if self.verbose:
+                print(f"MIME Type is: {mimetype}")
+            if mimetype is None or not mimetype.startswith('text'):
+                raise ValueError(f"The file at {full_path} is not a text file.")
+
+            self.path = full_path
 
     @staticmethod
-    def _read_file(path):
+    def _read_file(path: str) -> str:
         """
         Helper method to read the content of a file.
         """
@@ -18,7 +35,7 @@ class Note:
             return file.read()
 
     @staticmethod
-    def _calculate_full_path(path):
+    def _calculate_full_path(path: str) -> str:
         """
         Calculate the full path of the note file, including the vault path and file extension.
         """
@@ -37,7 +54,7 @@ class Note:
         return path
 
     @staticmethod
-    def get_content_from_path(path):
+    def get_content_from_path(path: str) -> str:
         """
         Static method: returns the content using a given path
         """
@@ -46,7 +63,7 @@ class Note:
             raise FileNotFoundError(f"The file at {full_path} does not exist.")
         return Note._read_file(full_path)
 
-    def get_content(self, path=None):
+    def get_content(self, path: Optional[str] = None) -> str:
         """
         Reads and returns the content of the Obsidian note file.
         If no path is provided, it uses the path property of the current instance.

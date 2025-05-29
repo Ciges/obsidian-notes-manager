@@ -1,21 +1,15 @@
 from classes.note import Note
 
-# Call the get_content method directly to display the content of the note
-try:
-    content = Note.get_content_from_path("BANDEJA DE ENTRADA")
-    print(content)
-except FileNotFoundError as e:
-    print(e)
+# Other ways to do the same thing
+#
+#  content = Note.get_content_from_path("BANDEJA DE ENTRADA")
+#  print(content)
+#
+#  note = Note()
+#   content = note.get_content("BANDEJA DE ENTRADA")
+#   print(content)
 
-# Call the get_content method for a new instance to display the content of the note
-note = Note()
-try:
-    content = note.get_content("BANDEJA DE ENTRADA")
-    print(content)
-except FileNotFoundError as e:
-    print(e)
-
-note = Note("BANDEJA DE ENTRADA")
+note = Note("BANDEJA DE ENTRADA", verbose=True)
 try:
     content = note.get_content()
     print(content)
