@@ -33,8 +33,9 @@ So in this example the file structure will be like this:
     - 📄task.py
 - 📁 modules/
     - 📄tasks_manager.py
-- 📄 config.ini
-- 📄 orm.py
+- 📁 onm/
+    - 📄 config.ini
+    - 📄 orm.py
 - ⚙️ list_this_week_tasks.py
 ```
 
@@ -60,7 +61,7 @@ Created a very simple Note class to represent a note in Obsidian. With these fun
 - `get_content(path: Optional[str] = None)`:
     Retrieves the content of the note file, using the instance's path or a provided path.
 
-The call is made using a MVC pattern. A first version of the controller has been created `orm.py`.
+The call is made using a MVC pattern. A first version of the controller has been created `orm.py` (under  the `onm` folder) to manage the actions defined in the YAML configuration file `onm.yaml`.
 
 The following `onm.yaml` file has been created:
 ```yaml
