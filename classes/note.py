@@ -1,5 +1,6 @@
 import os
 import configparser
+import json
 from typing import Optional
 
 class Note:
@@ -97,3 +98,22 @@ class Note:
             raise FileNotFoundError(f"The file at {path} does not exist.")
         
         return Note._read_file(path)
+
+    def __str__(self) -> str:
+        """
+        Returns the base name of the path for the instance when printed as a string.
+        If the instance is called directly, it prints the class name.
+        """
+        # Load messages from JSON file
+        config = configparser.ConfigParser()
+        config.read(os.path.join(os.path.dirname(__file__), '..', 'config.ini'))
+        language_file = config.get('Language', 'file', fallback='messages_es.json')
+
+        with open(os.path.join(os.path.dirname(__file__), '..', language_file), 'r', encoding='utf-8') as file:
+            messages = json.load(file)
+
+        if self.path:
+            info_message = messages["INFO_NOTE"] + os.path.splitext(os.path.basename(self.path))[0]
+            return info_message
+        else:
+            return self.__class__.__name__

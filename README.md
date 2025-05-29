@@ -1,5 +1,7 @@
 # Obsidian Notes Manager
 
+Version: 0.0.1
+
 In this repository I will create code (in Python) to manage my Obsidian notes in different Obsidian Vaults (that I use for professional and personal use).
 
 I use Obsidian to manage all my information and also, as **task manager** to manage my tasks, so I will create scripts to automate some operations that I do frequently in Obsidian.
@@ -49,6 +51,38 @@ I will use the following rules for myself:
 - I will try to make the code as simple as possible
 - Copilot & ChatGPT will be used **intensively** to help me write the code
 - Every commit made to this repository will be documented and, above all, will be **REALLY USEFUL for me** in the real life to manage my Obsidian notes.
+
+## Version 0.0.1
+
+Created a very simple Note class to represent a note in Obsidian. With these functions:
+- get_content_from_path(path: str) -> str:
+    Static method to retrieve the content of a note file using a given path.
+- get_content(path: Optional[str] = None) -> str:
+    Retrieves the content of the note file, using the instance's path or a provided path.
+
+The call is made using a MVC pattern. A first version of the controller has been created `orm.py`.
+
+The following `onm.yaml` file has been created:
+```yaml
+test:
+  - classes.Note.get_content_from_path:
+      args:
+        - "BANDEJA DE ENTRADA"
+```
+
+This is just a POC. When you call the script `test.py`, it will call `orm.py` and run the action defined in `onm.yaml`, which in this case is to retrieve the content of the note file located in the path "BANDEJA DE ENTRADA".
+
+The calling script `test.py` is just as follows:
+```python
+from orm import execute
+
+if __name__ == "__main__":
+   execute("onm.yaml", __file__)from orm import execute
+
+if __name__ == "__main__":
+   execute("onm.yaml", __file__)
+```
+
 
 <br><br>
 José Manuel Ciges Regueiro

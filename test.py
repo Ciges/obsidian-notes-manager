@@ -1,4 +1,4 @@
-from orm import execute_onm
+from orm import execute
 
 if __name__ == "__main__":
-    execute_onm("onm.yaml", __file__)
+   execute("onm.yaml", __file__)
