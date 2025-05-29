@@ -1,18 +1,4 @@
-from classes.note import Note
+from orm import execute_onm
 
-# Other ways to do the same thing
-#
-#  content = Note.get_content_from_path("BANDEJA DE ENTRADA")
-#  print(content)
-#
-#  note = Note()
-#   content = note.get_content("BANDEJA DE ENTRADA")
-#   print(content)
-
-note = Note("BANDEJA DE ENTRADA", verbose=True)
-try:
-    content = note.get_content()
-    print(content)
-except FileNotFoundError as e:
-    print(e)
-    
+if __name__ == "__main__":
+    execute_onm("onm.yaml", __file__)
