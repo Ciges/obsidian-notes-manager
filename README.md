@@ -56,7 +56,7 @@ I will use the following rules for myself:
 
 Created a very simple Note class to represent a note in Obsidian. With these functions:
 - `get_content_from_path(path: str)`:
-    Static method to retrieve the content of a note file using a given path.
+    **Static** method to retrieve the content of a note file using a given path, calling directly the class, without needing to create an instance of Note.
 - `get_content(path: Optional[str] = None)`:
     Retrieves the content of the note file, using the instance's path or a provided path.
 
