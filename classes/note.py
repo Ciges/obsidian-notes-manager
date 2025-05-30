@@ -5,6 +5,7 @@ import mimetypes
 import time
 from typing import Optional, Dict, Any
 import yaml
+import regex
 
 class Note:
     """
@@ -15,10 +16,6 @@ class Note:
         verbose (bool): Flag to enable verbose output for debugging.
 
     Methods:
-        __init__(path: Optional[str], verbose: bool = False):
-            Initializes the Note object and verifies the file type.
-        _read_file(path: str) -> str:
-            Reads the content of a file and returns it as a string.
         get_content_from_path(path: str) -> str:
             Static method to retrieve the content of a note file using a given path.
         get_content(path: Optional[str] = None) -> str:
@@ -27,6 +24,13 @@ class Note:
             Extracts and returns the frontmatter of the note, defined as the content between --- and --- at the beginning of the file.
         get_body() -> Optional[str]:
             Extracts and returns the body of the note, defined as the content after the second ---.
+        get_properties() -> Optional[Dict[str, Any]]:
+            Extracts and interprets the frontmatter as YAML.
+            Stores the result in a private variable `properties` and returns it.
+            Returns None if no frontmatter is found or if YAML parsing fails.
+        get_property(name: str) -> Optional[Any]:
+            Retrieves the value of a specific property from the `_properties` dictionary.
+            Returns None if the property does not exist.
     """
 
     @staticmethod
@@ -114,6 +118,7 @@ class Note:
             with open(path, 'r', encoding='utf-8') as file:
                 self._time_read = time.time()
                 self._content = file.read()
+                self._content_reloaded = True
                 if self.verbose:
                     print(f"File read at {self._time_read}, content length: {len(self._content)} characters.")
                 return self._content
@@ -166,27 +171,44 @@ class Note:
 
     def get_properties(self) -> Optional[Dict[str, Any]]:
         """
-        Extracts and interprets the frontmatter as YAML.
+        Search the properties of a note in the frontmatter and in the body.
         Stores the result in a private variable `properties` and returns it.
-        Returns None if no frontmatter is found or if YAML parsing fails.
         """
+        if hasattr(self, '_properties') and (not hasattr(self, '_content_reloaded') or not self._content_reloaded):
+            return self._properties # type: ignore
+        
+        self._properties = {}
         frontmatter = self.get_frontmatter()
         if frontmatter:
             try:
                 self._properties = yaml.safe_load(frontmatter)
-                return self._properties
             except yaml.YAMLError as e:
                 if self.verbose:
                     print(f"Error parsing YAML: {e}")
-        return None
+        
+        text = self.get_body()
+        if text:
+            # Regex to match properties in the format property::value
+            pattern = r'(?:(?<=\()\s*|(?<=\[)\s*|\s*)(\w+::.*?)(?=\s*[\])]|$)'
+            for linea in text.splitlines():
+                match = regex.search(pattern, linea)
+                if match:
+                    try:
+                        key, value = match.group().split('::', 1)  # Access the matched string and split it
+                        self._properties[key.strip()] = value.strip() # type: ignore
+                    except ValueError:
+                        if self.verbose:
+                            print(f"Error parsing property: {match.group()}")
+
+        return self._properties # type: ignore
 
     def get_property(self, name: str) -> Optional[Any]:
         """
         Retrieves the value of a specific property from the `_properties` dictionary.
         Returns None if the property does not exist.
         """
-        if hasattr(self, '_properties') and self._properties:
-            return self._properties.get(name)
+        if hasattr(self, '_properties') and self._properties: # type: ignore
+            return self._properties.get(name) # type: ignore
         return None
     
     def __getattr__(self, name: str) -> Optional[Any]:
