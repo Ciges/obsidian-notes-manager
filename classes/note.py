@@ -106,24 +106,24 @@ class Note:
         """
         Helper method to read the content of a file.
         """
-
+        reload = True
         # Check if the file has been read before and if it has not been modified since then
         if hasattr(self, '_time_read') and hasattr(self, '_content'):
             file_modified_time = os.path.getmtime(path)
-            if self.verbose:
-                print(f"File content has not been updated (mtime: {file_modified_time}), returning cached content at {self._time_read}.")
-            if file_modified_time <= self._time_read:
-                return self._content
-        else:
+            if self._time_read >= file_modified_time:
+                if self.verbose:
+                    print(f"File content has not been updated (mtime: {file_modified_time}), returning cached content at {self._time_read}.")
+                reload = False
+
+        if reload:
             with open(path, 'r', encoding='utf-8') as file:
                 self._time_read = time.time()
                 self._content = file.read()
-                self._content_reloaded = True
                 if self.verbose:
                     print(f"File read at {self._time_read}, content length: {len(self._content)} characters.")
-                return self._content
 
-        return ""
+        self._content_reloaded = reload
+        return self._content
 
 
     def get_content(self, path: Optional[str] = None) -> str:
