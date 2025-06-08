@@ -239,13 +239,13 @@ class Note:
             # Read properties if not already done
             self.get_properties()
 
-            info_message = messages["INFO_NOTE"] + os.path.splitext(os.path.basename(self._full_path))[0]
+            info_message = messages["info_note"] + os.path.splitext(os.path.basename(self._full_path))[0]
             title = self.title
             if title:
-                info_message += f" | Titulo: {title}"
+                info_message += f" | " + messages["title"] + ": {title}"
             updated = self.updated
             if updated:
-                info_message += f" | Última actualización: {updated}"
+                info_message += f" | " + messages["last_update"] + ": {updated}"
             return info_message
         else:
             return self.__class__.__name__

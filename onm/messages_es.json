@@ -1,4 +1,6 @@
 {
-    "INFO_NOTE": "Nota de Obsidian: ",
-    "RESULTS_FOR_CLASS": "Resultados para {args} de {class_name}.{method_name}:\n{result}"
+    "info_note": "Nota de Obsidian: ",
+    "RESULTS_FOR_CLASS": "Resultados para {args} de {class_name}.{method_name}:\n{result}",
+    "title": "Título",
+    "last_update": "Última actualización"
 }
