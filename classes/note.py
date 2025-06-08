@@ -7,6 +7,8 @@ from typing import Optional, Dict, Any
 import yaml
 import regex
 
+__version__ = "0.0.2"
+
 class Note:
     """
     A class to represent and interact with Obsidian note files.
@@ -25,11 +27,10 @@ class Note:
         get_body() -> Optional[str]:
             Extracts and returns the body of the note, defined as the content after the second ---.
         get_properties() -> Optional[Dict[str, Any]]:
-            Extracts and interprets the frontmatter as YAML.
-            Stores the result in a private variable `properties` and returns it.
-            Returns None if no frontmatter is found or if YAML parsing fails.
+            Search the properties of a note in the frontmatter and in the body.
+            Returns a dictionary of properties found.
         get_property(name: str) -> Optional[Any]:
-            Retrieves the value of a specific property from the `_properties` dictionary.
+            Retrieves the value of a specific property.
             Returns None if the property does not exist.
     """
 
@@ -172,7 +173,7 @@ class Note:
     def get_properties(self) -> Optional[Dict[str, Any]]:
         """
         Search the properties of a note in the frontmatter and in the body.
-        Stores the result in a private variable `properties` and returns it.
+        Returns a dictionary of properties found.
         """
         if hasattr(self, '_properties') and (not hasattr(self, '_content_reloaded') or not self._content_reloaded):
             return self._properties # type: ignore
@@ -235,7 +236,16 @@ class Note:
             messages = json.load(file)
 
         if self._full_path:
+            # Read properties if not already done
+            self.get_properties()
+
             info_message = messages["INFO_NOTE"] + os.path.splitext(os.path.basename(self._full_path))[0]
+            title = self.title
+            if title:
+                info_message += f" | Titulo: {title}"
+            updated = self.updated
+            if updated:
+                info_message += f" | Última actualización: {updated}"
             return info_message
         else:
             return self.__class__.__name__

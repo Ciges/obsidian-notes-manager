@@ -7,6 +7,8 @@ from classes.note import Note
 
 note = Note(path="BANDEJA DE ENTRADA")
 
+print(note)
+
 print(f"\nFrontmatter:")
 print(note.get_frontmatter())
 
