@@ -33,8 +33,9 @@ So in this example the file structure will be like this:
     - 📄task.py
 - 📁 modules/
     - 📄tasks_manager.py
-- 📄 config.ini
-- 📄 orm.py
+- 📁 onm/
+    - 📄 config.ini
+    - 📄 orm.py
 - ⚙️ list_this_week_tasks.py
 ```
 
@@ -52,15 +53,23 @@ I will use the following rules for myself:
 - Copilot & ChatGPT will be used **intensively** to help me write the code
 - Every commit made to this repository will be documented and, above all, will be **REALLY USEFUL for me** in the real life to manage my Obsidian notes.
 
-## Version 0.0.1
+## Version 0.0.2
 
 Created a very simple Note class to represent a note in Obsidian. With these functions:
 - `get_content_from_path(path: str)`:
     **Static** method to retrieve the content of a note file using a given path, calling directly the class, without needing to create an instance of Note.
 - `get_content(path: Optional[str] = None)`:
     Retrieves the content of the note file, using the instance's path or a provided path.
+- `get_frontmatter() -> Optional[str]`:  
+    Extracts and returns the frontmatter of the note, defined as the content between `---` and `---` at the beginning of the file.
+- `get_body() -> Optional[str]`:  
+    Extracts and returns the body of the note, defined as the content after the second `---`.
+- `get_properties() -> Optional[Dict[str, Any]]`:  
+    Searches the properties of a note in the frontmatter and in the body. Returns a dictionary of properties found.
+- `get_property(name: str) -> Optional[Any]`:  
+    Retrieves the value of a specific property. Returns `None` if the property does not exist.
 
-The call is made using a MVC pattern. A first version of the controller has been created `orm.py`.
+The call is made using a MVC pattern. A first version of the controller has been created `orm.py` (under  the `onm` folder) to manage the actions defined in the YAML configuration file `onm.yaml`.
 
 The following `onm.yaml` file has been created:
 ```yaml
