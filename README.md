@@ -1,5 +1,7 @@
 # Obsidian Notes Manager
 
+Version: 0.0.2
+
 In this repository I will create code (in Python) to manage my Obsidian notes in different Obsidian Vaults (that I use for professional and personal use).
 
 I use Obsidian to manage all my information and also, as **task manager** to manage my tasks, so I will create scripts to automate some operations that I do frequently in Obsidian.
