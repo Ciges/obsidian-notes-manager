@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 #from onm.onm import execute
 #
 #if __name__ == "__main__":
