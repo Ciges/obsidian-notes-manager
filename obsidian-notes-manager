@@ -1,49 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
-from configparser import ConfigParser
-import os
-try:
-    from git import Repo, InvalidGitRepositoryError
-    git_available = True
-except ImportError:
-    git_available = False
-
-config = ConfigParser()
-config.read('onm/config.ini')
+from classes.vault import Vault
 
 # Add the script version: 0.1
 __version__ = "0.1"
 
 # Constants indicating default values for parameters
 DEFAULT_VERBOSE = True
-
-# Function to show Vault information to the user
-def show_vault_info():
-    name = config.get('Obsidian', 'vault_name')
-    path = os.path.abspath(config.get('Obsidian', 'vault_path'))
-    description = config.get('Obsidian', 'vault_description')
-
-    print(f"\nObsidian Vault information:")
-    print(f"- Name: {name}")
-    print(f"- Path: {path}")
-    print(f"- Description: {description}")
-
-    # If we are in a git repository, show the git remote origin
-    if git_available:
-        try:
-            repo = Repo(path) # pyright: ignore[reportPossiblyUnboundVariable]
-            if repo.remotes:
-                git_remote = repo.remotes.origin.url
-                print(f"- Git Remote Origin: {git_remote}")
-            else:
-                print("- Git Remote Origin: No remotes configured")
-        except InvalidGitRepositoryError: # pyright: ignore[reportPossiblyUnboundVariable]
-            print("- Git Remote Origin: Not a git repository")
-        except Exception as e:
-            print(f"- Git Remote Origin: Error accessing repository ({e})")
-    else:
-        print("- Git Remote Origin: GitPython not available")
 
 def main():
     # Configure command line arguments
@@ -63,7 +27,9 @@ def main():
     
     if verbose:
         parser.print_help()
-        show_vault_info()
+        # Create vault instance and print it
+        vault = Vault()
+        print(vault)
 
 if __name__ == "__main__":
     main()
