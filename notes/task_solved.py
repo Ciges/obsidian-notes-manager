@@ -62,12 +62,13 @@ if args.resolved:
     new_content, date_changed = update_property_value(new_content, TASK_ENDDATE, datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
 
     # Remove the property TASK_SELECTED if it exists
-    new_content, selected_removed = update_property_value(new_content, TASK_SELECTED, verbose=args.verbose)
+    #new_content, selected_removed = update_property_value(new_content, TASK_SELECTED, verbose=args.verbose)
     # Remove the property TASK_PRIORITY if it exists
-    new_content, priority_removed = update_property_value(new_content, TASK_PRIORITY, verbose=args.verbose)
+    #new_content, priority_removed = update_property_value(new_content, TASK_PRIORITY, verbose=args.verbose)
 
     # Check if any change was made
-    was_changed = state_changed or date_changed or selected_removed or priority_removed
+    #was_changed = state_changed or date_changed or selected_removed or priority_removed
+    was_changed = state_changed or date_changed
     
     if was_changed:
         # Write the updated content back to the file
