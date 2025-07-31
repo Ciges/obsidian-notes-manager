@@ -1,0 +1,13 @@
+obsidian:
+  vault: c:\Users\jmciges\Notas\Marques-de-Valdecilla
+
+# Task properties fields names in Obsidian
+tasks:
+  properties:
+    end_date: "fecha_realizacion"
+    update: "updated"
+    state: "estado"  
+    next_step: "proximo_paso"
+    next_date: "proxima_fecha"
+  paths:
+    solved: "TAREAS/Completadas/Tickets"
