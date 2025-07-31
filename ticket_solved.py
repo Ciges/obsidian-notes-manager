@@ -3,7 +3,6 @@ from datetime import datetime
 import os
 
 # Import functions from our notes module
-from modules.ticket_functions import read_note_content, remove_property, update_property_value, write_note_content, load_obsidian_config, get_obsidian_vault_path, resolve_note_path, move_note_to_folder
 from modules.note import Note
 
 # Configure command line arguments
@@ -34,9 +33,9 @@ if not args.resolved and not args.closed:
     print("Error: Must specify either --resolved (-r) or --closed (-c) option.")
     exit(1)
 
-# Load configuration
-config = load_obsidian_config()
-vault_path = get_obsidian_vault_path(config)
+# Load configuration using Note static methods
+config = Note.load_obsidian_config()
+vault_path = Note.get_obsidian_vault_path(config)
 
 # Get task properties from configuration
 task_props = config.get('tasks', {}).get('properties', {})
@@ -50,8 +49,8 @@ if args.verbose and vault_path:
         print("Configuration loaded (some characters cannot be displayed in this console)")
     print(f"Obsidian vault path: {vault_path}")
 
-# Resolve the note path relative to vault if needed
-resolved_note_path = resolve_note_path(args.note, vault_path, args.verbose)
+# Resolve the note path relative to vault if needed using Note static method
+resolved_note_path = Note.resolve_note_path(args.note, vault_path, args.verbose)
 
 # Process the task based on the selected action
 action = None
@@ -70,29 +69,34 @@ if not os.path.exists(resolved_note_path):
     print(f"Error: Note file '{resolved_note_path}' not found.")
     exit(1)
 
-# Read the note content
-content = read_note_content(resolved_note_path)
-if content is None:
+# Create a Note instance with the resolved path
+note = Note(resolved_note_path, args.verbose)
+
+# Load the content
+try:
+    content = note.get_content()
+except FileNotFoundError:
+    print(f"Error: Note file '{resolved_note_path}' not found.")
+    exit(1)
+except Exception as e:
+    print(f"Error reading note: {e}")
     exit(1)
 
-# Create a Note instance
-note = Note(content)
- 
 was_changed = False
 if args.resolved:
    
     # Update the TASK_STATE property
-    state_changed = update_property_value(note, task_props.get('state'), state_emoji, args.verbose)
+    state_changed = note.set_property(task_props.get('state'), state_emoji, args.verbose)
     
     # Update the TASK_ENDDATE property to the current date and time in format YYYY-MM-DD HH:MM
-    date_changed = update_property_value(note, task_props.get('end_date'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
+    date_changed = note.set_property(task_props.get('end_date'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
     
     # Update the TASK_UPDATE property
-    update_changed = update_property_value(note, task_props.get('update'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
+    update_changed = note.set_property(task_props.get('update'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
 
     # Remove the TASK_NEXT_STEP and TASK_NEXT_DATE properties if they exist
-    remove_next_step = remove_property(note, task_props.get('next_step'), args.verbose)
-    remove_next_date = remove_property(note, task_props.get('next_date'), args.verbose)
+    remove_next_step = note.remove_property(task_props.get('next_step'), args.verbose)
+    remove_next_date = note.remove_property(task_props.get('next_date'), args.verbose)
 
     # Check if any change was made
     was_changed = state_changed or date_changed or update_changed or remove_next_step or remove_next_date
@@ -100,27 +104,27 @@ if args.resolved:
 elif args.closed:
    
     # Update the TASK_STATE property
-    state_changed = update_property_value(note, task_props.get('state'), state_emoji, args.verbose)
+    state_changed = note.set_property(task_props.get('state'), state_emoji, args.verbose)
     
     # Update the TASK_UPDATE property
-    update_changed = update_property_value(note, task_props.get('update'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
+    update_changed = note.set_property(task_props.get('update'), datetime.now().strftime("%Y-%m-%d %H:%M"), args.verbose)
 
     # Remove the TASK_NEXT_STEP and TASK_NEXT_DATE properties if they exist
-    remove_next_step = remove_property(note, task_props.get('next_step'), args.verbose)
-    remove_next_date = remove_property(note, task_props.get('next_date'), args.verbose)
+    remove_next_step = note.remove_property(task_props.get('next_step'), args.verbose)
+    remove_next_date = note.remove_property(task_props.get('next_date'), args.verbose)
     
     # Check if any change was made
     was_changed = state_changed or update_changed or remove_next_step or remove_next_date
 
 # Check if any change was made
 if was_changed:
-    # Write the updated content back to the file
-    if write_note_content(resolved_note_path, note.content):
+    # Write the updated content back to the file using Note method
+    if note.write_content():
         print(f"Task marked as {action}: {resolved_note_path}")
         
-        # Move the note to the appropriate path
+        # Move the note to the appropriate path using Note static method
         if target_path:
-            moved_path = move_note_to_folder(resolved_note_path, target_path, vault_path, args.verbose)
+            moved_path = Note.move_note_to_folder(resolved_note_path, target_path, vault_path, args.verbose)
             if moved_path:
                 print(f"Note moved to: {moved_path}")
             else:
@@ -128,6 +132,7 @@ if was_changed:
         else:
             print(f"Warning: No {action} path configured in config.yaml")
     else:
+        print(f"Error: Failed to write changes to {resolved_note_path}")
         exit(1)
 else:
     print(f"No changes were needed - task was already {action}.")
