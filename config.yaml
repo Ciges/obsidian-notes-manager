@@ -10,7 +10,7 @@ tasks:
     next_step: "proximo_paso"
     next_date: "proxima_fecha"
   paths:
-    solved: "TAREAS/Completadas/Tickets/resueltos"
+    resolved: "TAREAS/Completadas/Tickets/resueltos"
     closed: "TAREAS/Completadas/Tickets/cerrados"
   states:
     resolved: "✔️"
