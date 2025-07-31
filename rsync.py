@@ -1,5 +1,6 @@
 import argparse
 import os
+from typing import Set, Any, cast
 from dirsync import sync # type: ignore
 
 def main():
@@ -59,25 +60,60 @@ Note: You need to install dirsync first:
         print("-" * 50)
     
     try:
-        # Perform synchronization using dirsync
-        # sync(sourcedir, targetdir, action, **options)
-        sync(
-            source,                    # Source directory
-            destination,               # Destination directory  
-            'sync',                    # Action: 'sync' synchronizes directories
-            purge=True,                # Remove files in target that don't exist in source
-            verbose=args.verbose,      # Verbose output
-            dryrun=args.test,         # Test mode - don't actually make changes
-            create=True,              # Create target directory if it doesn't exist
-            exclude=[],               # List of patterns to exclude (empty for now)
-            only=[],                  # List of patterns to include only (empty = all)
-            ignore=[]                 # List of patterns to ignore (empty for now)
-        )
-        
         if args.test:
-            print("\nDry run completed. Run without --test to actually perform synchronization.")
+            # Test mode: Use dirsync's --diff option to show differences
+            print("Running in test mode - analyzing differences...\n")
+            
+            # Use 'diff' action to show what would be different
+            sync(
+                source,                    # Source directory
+                destination,               # Destination directory  
+                'diff',                    # Action: 'diff' shows differences only
+                verbose=args.verbose,      # Verbose output
+                create=True,              # Allow checking against non-existent target
+            )
+            
+            print("\nDifferences analysis completed.")
+            print("Use --verbose (-v) to see detailed differences.")
+            # Uncomment the following line if you want to handle cases where no differences are found
+            # print("No differences found - directories are already synchronized.")
+            
+            print("\nTo actually perform the synchronization, run without --test flag")
+            
         else:
-            print("\nSynchronization completed successfully.")
+            # Normal synchronization mode
+            try:
+                result: Set[Any] = cast(Set[Any], sync(
+                    source,                    # Source directory
+                    destination,               # Destination directory  
+                    'sync',                    # Action: 'sync' synchronizes directories
+                    verbose=args.verbose,      # Verbose output
+                    purge=True,                # Remove files in target that don't exist in source (--purge)
+                    create=True,              # Create target directory if it doesn't exist (--create)
+                    force=True,               # Force file permissions changes (--force)
+                    twoway=False,             # Only sync from source to target (not bidirectional)
+                    exclude=[],               # Regex patterns to exclude (empty for now)
+                    only=[],                  # Regex patterns to include only (empty = all)
+                    ignore=[]                 # Regex patterns to ignore (empty for now)
+                ))
+                
+                if result:
+                    print(f"\nSynchronization completed successfully. {len(result)} files processed.")
+                else:
+                    print("\nSynchronization completed successfully.")
+                    
+            except PermissionError as e:
+                print(f"Warning: Permission issue encountered: {e}")
+                print("Some files may not have been synchronized due to permission restrictions.")
+                print("Synchronization completed with warnings.")
+            except OSError as e:
+                if "permission" in str(e).lower() or "access" in str(e).lower():
+                    print(f"Warning: File access issue: {e}")
+                    print("Some files may not have been synchronized due to access restrictions.")
+                    print("Synchronization completed with warnings.")
+                else:
+                    # Re-raise if it's not a permission-related OSError
+                    raise
             
     except ImportError:
         print("Error: dirsync module not found.")
