@@ -60,7 +60,24 @@ elif args.closed:
     action = "closed"
 
 state_emoji = task_states.get(action)
-target_path = task_paths.get(action)
+
+# Determine if this is a team ticket (under "REVISIÓN DE TICKETS")
+# Check if "REVISIÓN DE TICKETS" is one of the folder names in the path
+path_parts = os.path.normpath(resolved_note_path).split(os.sep)
+is_team_ticket = "REVISIÓN DE TICKETS" in path_parts
+
+if is_team_ticket:
+    # Use team paths for tickets under "REVISIÓN DE TICKETS"
+    target_path = task_paths.get('team', {}).get(action)
+    if args.verbose:
+        print(f"Detected team ticket - using team path for {action}")
+        print(f"Path parts: {path_parts}")
+else:
+    # Use regular paths for personal tasks
+    target_path = task_paths.get(action)
+    if args.verbose:
+        print(f"Detected personal task - using regular path for {action}")
+        print(f"Path parts: {path_parts}")
 
 print(f"Marking {resolved_note_path} as {action}.")
 
@@ -126,11 +143,17 @@ if was_changed:
         if target_path:
             moved_path = Note.move_note_to_folder(resolved_note_path, target_path, vault_path, args.verbose)
             if moved_path:
-                print(f"Note moved to: {moved_path}")
+                if is_team_ticket:
+                    print(f"Team ticket moved to: {moved_path}")
+                else:
+                    print(f"Personal task moved to: {moved_path}")
             else:
                 print(f"Warning: Failed to move note to {action} folder")
         else:
-            print(f"Warning: No {action} path configured in config.yaml")
+            if is_team_ticket:
+                print(f"Warning: No team {action} path configured in config.yaml")
+            else:
+                print(f"Warning: No {action} path configured in config.yaml")
     else:
         print(f"Error: Failed to write changes to {resolved_note_path}")
         exit(1)

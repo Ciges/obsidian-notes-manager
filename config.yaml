@@ -12,6 +12,9 @@ tasks:
   paths:
     resolved: "TAREAS/Completadas/Tickets/resueltos"
     closed: "TAREAS/Completadas/Tickets/cerrados"
+    team:
+      resolved: "REVISIÓN DE TICKETS/Resueltos"
+      closed: "REVISIÓN DE TICKETS/Cerrados"
   states:
     resolved: "✔️"
     closed: "🔒"

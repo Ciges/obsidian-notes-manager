@@ -5,7 +5,7 @@ import mimetypes
 import time
 import shutil
 import re
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pathlib import Path
 import yaml
 import regex
@@ -194,8 +194,8 @@ class Note:
         if text:
             # Regex to match properties in the format property::value
             pattern = r'(?:(?<=\()\s*|(?<=\[)\s*|\s*)(\w+::.*?)(?=\s*[\])]|$)'
-            for linea in text.splitlines():
-                match = regex.search(pattern, linea)
+            for line in text.splitlines():
+                match = regex.search(pattern, line)
                 if match:
                     try:
                         key, value = match.group().split('::', 1)  # Access the matched string and split it
@@ -392,9 +392,9 @@ class Note:
     def load_obsidian_config(config_file: str = 'config.yaml') -> Dict[str, Any]:
         """Load configuration from config.yaml file."""
         # Get the parent directory of the current script (modules folder)
-        # then go up one more level to get the tasks folder
+        # then go up one more level to get the scripts folder
         script_dir = Path(__file__).resolve().parent  # modules folder
-        parent_dir = script_dir.parent  # tasks folder
+        parent_dir = script_dir.parent  # scripts folder
         config_path = os.path.join(parent_dir, config_file)
         
         try:
@@ -498,3 +498,71 @@ class Note:
         except Exception as e:
             print(f"Error moving file from '{note_path}' to '{destination_file}': {e}")
             return None
+
+    def find(self, pattern: str, case_sensitive: bool = True, whole_word: bool = False, group: Optional[int] = None) -> List[str]:
+        """
+        Find lines in the note content that match a regular expression pattern.
+        
+        Args:
+            pattern (str): Regular expression pattern to search for.
+            case_sensitive (bool): Whether the search should be case sensitive. Defaults to True.
+            whole_word (bool): Whether to match whole words only. Defaults to False.
+            group (Optional[int]): If specified, return only the content of this capture group number.
+                                  If None, returns the complete matching lines.
+            
+        Returns:
+            List[str]: List of lines that contain text matching the pattern, or list of group content if group is specified.
+        """
+        content = self.get_content()
+        
+        # Prepare the pattern based on options
+        search_pattern = pattern
+        
+        if whole_word:
+            # Add word boundaries to the pattern
+            search_pattern = rf'\b{re.escape(pattern)}\b'
+        
+        # Set regex flags
+        flags = 0 if case_sensitive else re.IGNORECASE
+        
+        try:
+            # Compile the regex pattern
+            compiled_pattern = re.compile(search_pattern, flags)
+            
+            # Split content into lines and search
+            lines = content.splitlines()
+            matching_results: List[str] = []
+            
+            for line in lines:
+                match = compiled_pattern.search(line)
+                if match:
+                    if group is not None:
+                        # Return only the specified group content
+                        try:
+                            group_content = match.group(group)
+                            if group_content is not None:
+                                matching_results.append(group_content)
+                        except IndexError:
+                            if self.verbose:
+                                print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
+                    else:
+                        # Return the complete matching line
+                        matching_results.append(line)
+            
+            if self.verbose:
+                if group is not None:
+                    print(f"Found {len(matching_results)} group {group} matches for pattern '{pattern}'")
+                else:
+                    print(f"Found {len(matching_results)} lines matching pattern '{pattern}'")
+            
+            return matching_results
+            
+        except re.error as e:
+            if self.verbose:
+                print(f"Error in regular expression pattern '{pattern}': {e}")
+            return []
+
+    # Create alias for the find function
+    findText = find
+
+
