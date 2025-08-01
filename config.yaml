@@ -1,5 +1,5 @@
 obsidian:
-  vault: c:\Users\jmciges\Notas\Marques-de-Valdecilla
+  vault: C:\Users\jmciges\OneDrive - Seresco, S.A\Documentos\Marques-de-Valdecilla
 
 # Task properties fields names in Obsidian
 tasks:
@@ -12,6 +12,9 @@ tasks:
   paths:
     resolved: "TAREAS/Completadas/Tickets/resueltos"
     closed: "TAREAS/Completadas/Tickets/cerrados"
+    team:
+      resolved: "REVISIÓN DE TICKETS/Resueltos"
+      closed: "REVISIÓN DE TICKETS/Cerrados"
   states:
     resolved: "✔️"
     closed: "🔒"
