@@ -135,21 +135,20 @@ class Note:
         Reads and returns the content of the Obsidian note file.
         If no path is provided, it uses the path property of the current instance.
         """
-        """
-        Reads and returns the content of the Obsidian note file.
-        If no path is provided, it uses the path property of the current instance.
-        """
         if path is not None:
             full_path = self.__calculate_full_path(path)
 
             if self.verbose:
                 print(f"Full path: {full_path}")
+            return self._read_file(full_path)
         else:
-            path = self._full_path
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"The file at {path} does not exist.")
-
-        return self._read_file(path)
+            if not hasattr(self, '_full_path'):
+                raise ValueError("No path provided and instance has no path set")
+            
+            if not os.path.exists(self._full_path):
+                raise FileNotFoundError(f"The file at {self._full_path} does not exist.")
+            
+            return self._read_file(self._full_path)
 
     def get_frontmatter(self) -> Optional[str]:
         """
@@ -157,8 +156,8 @@ class Note:
         The frontmatter is defined as the content between --- and --- at the beginning of the file.
         Returns None if no frontmatter is found.
         """
-        content: Optional[str] = self.get_content()
-        if content.startswith('---'):
+        content: str = self.get_content()  # Cambiar Optional[str] a str
+        if content and content.startswith('---'):
             end_index = content.find('---', 3)
             if end_index != -1:
                 return content[3:end_index].strip()
@@ -170,8 +169,8 @@ class Note:
         The body is defined as the content after the second ---.
         Returns None if no body is found.
         """
-        content: Optional[str] = self.get_content()
-        if content.startswith('---'):
+        content: str = self.get_content()  # Cambiar Optional[str] a str
+        if content and content.startswith('---'):
             end_index = content.find('---', 3)
             if end_index != -1:
                 return content[end_index + 3:].strip()
@@ -185,15 +184,18 @@ class Note:
         if hasattr(self, '_properties') and (not hasattr(self, '_content_reloaded') or not self._content_reloaded):
             return self._properties # type: ignore
         
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         frontmatter = self.get_frontmatter()
         if frontmatter:
+            # Always use manual parsing - no YAML dependency
             try:
-                self._properties = yaml.safe_load(frontmatter)
-            except yaml.YAMLError as e:
+                self._properties = self._parse_frontmatter_manually(frontmatter)
                 if self.verbose:
-                    print(f"Error parsing YAML: {e}")
-        
+                    print("Used manual frontmatter parsing")
+            except Exception as parse_error:
+                if self.verbose:
+                    print(f"Error in manual frontmatter parsing: {parse_error}")
+    
         text = self.get_body()
         if text:
             # Regex to match properties in the format property::value
@@ -209,6 +211,126 @@ class Note:
                             print(f"Error parsing property: {match.group()}")
 
         return self._properties # type: ignore
+
+    def _parse_frontmatter_manually(self, frontmatter: str) -> Dict[str, Any]:
+        """
+        Manually parse frontmatter without YAML dependency.
+        Handles both inline and multiline list formats.
+        """
+        properties: Dict[str, Any] = {}
+        lines = frontmatter.split('\n')
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Skip empty lines and comments
+            if not line or line.startswith('#'):
+                i += 1
+                continue
+            
+            # Check if line contains a property
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                # Handle different value types
+                if not value:
+                    # Empty value, check if next lines are list items
+                    list_items: List[Any] = []
+                    i += 1
+                    
+                    # Look for list items (lines starting with -)
+                    while i < len(lines):
+                        next_line = lines[i].strip()
+                        if next_line.startswith('- '):
+                            # Remove the "- " prefix and clean up quotes
+                            item = next_line[2:].strip()
+                            cleaned_item = self._clean_yaml_value(item)
+                            list_items.append(cleaned_item)
+                            i += 1
+                        elif next_line and not next_line.startswith(' ') and ':' in next_line:
+                            # Found next property, break
+                            break
+                        elif next_line and next_line.startswith('  ') and not next_line.startswith('- '):
+                            # Multi-line value continuation (indented)
+                            i += 1
+                        else:
+                            i += 1
+                    
+                    if list_items:
+                        properties[key] = list_items
+                    else:
+                        properties[key] = None
+                    continue
+                    
+                elif value.startswith('[') and value.endswith(']'):
+                    # Inline list format: [item1, item2, item3]
+                    list_content = value[1:-1].strip()  # Remove brackets
+                    if list_content:
+                        # Smart split that respects quotes
+                        items: List[Any] = self._parse_inline_list(list_content)
+                        properties[key] = items
+                    else:
+                        properties[key] = []
+                        
+                else:
+                    # Regular value
+                    properties[key] = self._clean_yaml_value(value)
+        
+            i += 1
+        
+        return properties
+
+    def _parse_inline_list(self, list_content: str) -> List[Any]:
+        """
+        Parse inline list content, respecting quotes and handling special characters.
+        Example: 'item1, "item with spaces", item3, "item with, comma"'
+        """
+        items: List[Any] = []
+        current_item = ""
+        in_quotes = False
+        quote_char = None
+        i = 0
+        
+        while i < len(list_content):
+            char = list_content[i]
+            
+            if not in_quotes:
+                if char in ['"', "'"]:
+                    # Starting quoted string
+                    in_quotes = True
+                    quote_char = char
+                    current_item += char
+                elif char == ',':
+                    # End of item
+                    if current_item.strip():
+                        items.append(self._clean_yaml_value(current_item.strip()))
+                    current_item = ""
+                else:
+                    current_item += char
+            else:
+                # Inside quotes
+                if char == quote_char:
+                    # Check if it's escaped
+                    if i > 0 and list_content[i-1] == '\\':
+                        current_item += char
+                    else:
+                        # End of quoted string
+                        in_quotes = False
+                        quote_char = None
+                        current_item += char
+                else:
+                    current_item += char
+            
+            i += 1
+        
+        # Add the last item
+        if current_item.strip():
+            items.append(self._clean_yaml_value(current_item.strip()))
+        
+        return items
 
     def get_property(self, name: str) -> Optional[Any]:
         """
@@ -294,15 +416,15 @@ class Note:
     def detect_line_ending(self, input_content: Optional[str] = None) -> str:
         """Detect the line ending style used in the content."""
         if input_content is None:
-            content_to_check: Optional[str] = self.get_content()
+            content_to_check: str = self.get_content()  # Ahora sabemos que get_content() retorna str
         else:
             content_to_check = input_content
         
-        if '\r\n' in content_to_check:
+        if content_to_check and '\r\n' in content_to_check:
             return '\r\n'  # Windows
-        elif '\n' in content_to_check:
+        elif content_to_check and '\n' in content_to_check:
             return '\n'    # Unix/Linux/Mac
-        elif '\r' in content_to_check:
+        elif content_to_check and '\r' in content_to_check:
             return '\r'    # Classic Mac
         else:
             return '\n'    # Default to Unix if no line endings found
@@ -313,7 +435,7 @@ class Note:
             verbose = self.verbose
             
         # Get the current content
-        content: Optional[str] = self.get_content()
+        content: str = self.get_content()  # Ahora sabemos que retorna str
         
         # Detect the original line ending style
         line_ending = self.detect_line_ending(content)
@@ -519,7 +641,7 @@ class Note:
         Returns:
             List[str]: List of lines that contain text matching the pattern, or list of group content if group is specified.
         """
-        content: Optional[str] = self.get_content()
+        content: str = self.get_content()  # Ahora sabemos que retorna str
         
         # Prepare the pattern based on options
         search_pattern = pattern
@@ -566,7 +688,7 @@ class Note:
         except re.error as e:
             if self.verbose:
                 print(f"Error in regular expression pattern '{pattern}': {e}")
-            return []  # Ensure the function returns an empty list in case of an error
+            return []
 
     def replace(self, pattern: str, replacement: str, case_sensitive: bool = True, whole_word: bool = False, group: Optional[int] = None) -> List[str]:
         """
@@ -666,5 +788,36 @@ class Note:
             if self.verbose:
                 print(f"Error in regular expression pattern '{pattern}': {e}")
             return []  # Ensure the function returns an empty list in case of an error
+
+    def _clean_yaml_value(self, value: str) -> Any:
+        """
+        Clean and convert YAML-like values to appropriate Python types.
+        """
+        value = value.strip()
+        
+        # Remove surrounding quotes if present
+        if len(value) >= 2:
+            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                value = value[1:-1]
+        
+        # Convert common YAML-like values
+        if value.lower() in ('true', 'yes', 'on'):
+            return True
+        elif value.lower() in ('false', 'no', 'off'):
+            return False
+        elif value.lower() in ('null', 'nil', '~', ''):
+            return None
+        
+        # Try to convert to number
+        try:
+            if '.' in value:
+                return float(value)
+            else:
+                return int(value)
+        except ValueError:
+            pass
+        
+        # Return as string
+        return value
 
 
