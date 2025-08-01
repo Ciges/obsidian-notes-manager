@@ -135,6 +135,10 @@ class Note:
         Reads and returns the content of the Obsidian note file.
         If no path is provided, it uses the path property of the current instance.
         """
+        """
+        Reads and returns the content of the Obsidian note file.
+        If no path is provided, it uses the path property of the current instance.
+        """
         if path is not None:
             full_path = self.__calculate_full_path(path)
 
@@ -153,7 +157,7 @@ class Note:
         The frontmatter is defined as the content between --- and --- at the beginning of the file.
         Returns None if no frontmatter is found.
         """
-        content = self.get_content()
+        content: Optional[str] = self.get_content()
         if content.startswith('---'):
             end_index = content.find('---', 3)
             if end_index != -1:
@@ -166,7 +170,7 @@ class Note:
         The body is defined as the content after the second ---.
         Returns None if no body is found.
         """
-        content = self.get_content()
+        content: Optional[str] = self.get_content()
         if content.startswith('---'):
             end_index = content.find('---', 3)
             if end_index != -1:
@@ -287,16 +291,18 @@ class Note:
                 print(f"Error writing to file {path}: {e}")
             return False
 
-    def detect_line_ending(self, content: Optional[str] = None) -> str:
+    def detect_line_ending(self, input_content: Optional[str] = None) -> str:
         """Detect the line ending style used in the content."""
-        if content is None:
-            content = self.get_content()
+        if input_content is None:
+            content_to_check: Optional[str] = self.get_content()
+        else:
+            content_to_check = input_content
         
-        if '\r\n' in content:
+        if '\r\n' in content_to_check:
             return '\r\n'  # Windows
-        elif '\n' in content:
+        elif '\n' in content_to_check:
             return '\n'    # Unix/Linux/Mac
-        elif '\r' in content:
+        elif '\r' in content_to_check:
             return '\r'    # Classic Mac
         else:
             return '\n'    # Default to Unix if no line endings found
@@ -307,7 +313,7 @@ class Note:
             verbose = self.verbose
             
         # Get the current content
-        content = self.get_content()
+        content: Optional[str] = self.get_content()
         
         # Detect the original line ending style
         line_ending = self.detect_line_ending(content)
@@ -513,7 +519,7 @@ class Note:
         Returns:
             List[str]: List of lines that contain text matching the pattern, or list of group content if group is specified.
         """
-        content = self.get_content()
+        content: Optional[str] = self.get_content()
         
         # Prepare the pattern based on options
         search_pattern = pattern
@@ -560,9 +566,105 @@ class Note:
         except re.error as e:
             if self.verbose:
                 print(f"Error in regular expression pattern '{pattern}': {e}")
-            return []
+            return []  # Ensure the function returns an empty list in case of an error
 
-    # Create alias for the find function
-    findText = find
+    def replace(self, pattern: str, replacement: str, case_sensitive: bool = True, whole_word: bool = False, group: Optional[int] = None) -> List[str]:
+        """
+        Replace text in the note content that matches a regular expression pattern.
+        
+        Args:
+            pattern (str): Regular expression pattern to search for.
+            replacement (str): Text to replace the matched pattern with.
+            case_sensitive (bool): Whether the search should be case sensitive. Defaults to True.
+            whole_word (bool): Whether to match whole words only. Defaults to False.
+            group (Optional[int]): If specified, replace only the content of this capture group number.
+                                  If None, replaces the complete matching pattern.
+            
+        Returns:
+            List[str]: List of lines that were modified (showing the new content).
+        """
+        content: str = self.get_content()
+        
+        # Prepare the pattern based on options
+        search_pattern = pattern
+        
+        if whole_word:
+            # Add word boundaries to the pattern
+            search_pattern = rf'\b{re.escape(pattern)}\b'
+        
+        # Set regex flags
+        flags = 0 if case_sensitive else re.IGNORECASE
+        
+        try:
+            # Compile the regex pattern
+            compiled_pattern = re.compile(search_pattern, flags)
+            
+            # Split content into lines and process
+            lines = content.splitlines()
+            modified_lines: List[str] = []
+            content_changed = False
+            
+            for i, line in enumerate(lines):
+                original_line = line
+                
+                if group is not None:
+                    # Replace only the specific capture group
+                    def group_replacer(match: re.Match[str]) -> str:
+                        groups = list(match.groups())
+                        if 0 <= group - 1 < len(groups):
+                            groups[group - 1] = replacement
+                            # Reconstruct the match with the replaced group
+                            result = match.group(0)
+                            for j, group_content in enumerate(groups):
+                                if j == group - 1:
+                                    result = result.replace(match.group(j + 1), group_content)
+                            return result
+                        return match.group(0)
+                    
+                    try:
+                        new_line = compiled_pattern.sub(group_replacer, line)
+                    except IndexError:
+                        if self.verbose:
+                            print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
+                        new_line = line
+                else:
+                    # Replace the entire match
+                    new_line = compiled_pattern.sub(replacement, line)
+                
+                # Update the line in the list
+                lines[i] = new_line
+                
+                # Track if this line was modified
+                if new_line != original_line:
+                    modified_lines.append(new_line)
+                    content_changed = True
+            
+            # Update the content if any changes were made
+            if content_changed:
+                new_content = '\n'.join(lines)
+                
+                # Preserve original line endings
+                line_ending = self.detect_line_ending(content)
+                if line_ending != '\n':
+                    new_content = new_content.replace('\n', line_ending)
+                
+                # Update the content using Note method
+                self.set_content(new_content)
+                
+                if self.verbose:
+                    if group is not None:
+                        print(f"Replaced group {group} in {len(modified_lines)} lines using pattern '{pattern}'")
+                    else:
+                        print(f"Replaced {len(modified_lines)} lines using pattern '{pattern}'")
+            else:
+                if self.verbose:
+                    print(f"No matches found for pattern '{pattern}' - no replacements made")
+            
+            return modified_lines
+            
+        except re.error as e:
+            if self.verbose:
+                print(f"Error in regular expression pattern '{pattern}': {e}")
+            return []  # Ensure the function returns an empty list in case of an error
 
 
