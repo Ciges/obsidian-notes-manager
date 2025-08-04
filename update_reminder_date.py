@@ -41,6 +41,11 @@ if not os.path.exists(resolved_note_path):
     print(f"Error: Note file '{resolved_note_path}' not found.")
     exit(1)
 
+# Check if the file is an Obsidian note
+if not Note.is_obsidian_note(resolved_note_path):
+    print(f"Error: '{resolved_note_path}' is not a valid Obsidian note file.")
+    exit(1)
+
 # Create a Note instance with the resolved path
 note = Note(resolved_note_path, args.verbose)
 

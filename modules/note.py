@@ -820,4 +820,63 @@ class Note:
         # Return as string
         return value
 
+    @staticmethod
+    def is_obsidian_note(file_path: str, verbose: bool = False) -> bool:
+        """
+        Check if a file is an Obsidian note.
+        
+        Args:
+            file_path (str): Path to the file to check.
+            verbose (bool): Whether to print verbose output. Defaults to False.
+        
+        Returns:
+            bool: True if the file is an Obsidian note (.md extension and text MIME type), False otherwise.
+        """
+        try:
+            # Check if file exists
+            if not os.path.exists(file_path):
+                print(f"Error: File does not exist: {file_path}")
+                return False
+            
+            # Check if it's a file (not a directory)
+            if not os.path.isfile(file_path):
+                if verbose:
+                    print(f"Warning: Path is not a file: {file_path}")
+                return False
+            
+            # Check file extension
+            _, extension = os.path.splitext(file_path)
+            if extension.lower() != '.md':
+                if verbose:
+                    print(f"File does not have .md extension: {file_path} (extension: {extension})")
+                return False
+            
+            # Check MIME type
+            mimetype, encoding = mimetypes.guess_type(file_path)
+            if verbose:
+                print(f"File: {file_path}")
+                print(f"MIME type: {mimetype}")
+                print(f"Encoding: {encoding}")
+            
+            # Verify it's a text file
+            if mimetype is None:
+                if verbose:
+                    print(f"Warning: Could not determine MIME type for: {file_path}")
+                # For .md files, we can still assume it's text if MIME detection fails
+                return True
+            
+            if not mimetype.startswith('text'):
+                if verbose:
+                    print(f"File is not a text file (MIME: {mimetype}): {file_path}")
+                return False
+            
+            if verbose:
+                print(f"File is a valid Obsidian note: {file_path}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error checking file {file_path}: {e}")
+            return False
+
 
