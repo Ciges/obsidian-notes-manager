@@ -396,6 +396,7 @@ class Note:
     def write_content(self) -> bool:
         """
         Writes the current content of the note to the note file.
+        Preserves the original line ending style.
         Returns True if the write was successful, False otherwise.
         """
         path = self._full_path
@@ -403,11 +404,39 @@ class Note:
             raise ValueError("The full path to the note file is not set.")
 
         try:
-            with open(path, 'w', encoding='utf-8') as file:
-                file.write(self._content)
+            # Detect the original line ending from the current content before writing
+            original_content = ""
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as file:
+                    original_content = file.read()
+        
+            # Detect the line ending style that should be used
+            line_ending = self.detect_line_ending(original_content) if original_content else '\n'
+            
+            # Prepare content with the correct line endings
+            content_to_write = self._content
+            
+            # Normalize to Unix line endings first, then convert to target format
+            content_to_write = content_to_write.replace('\r\n', '\n').replace('\r', '\n')
+            
+            # Convert to the target line ending format if it's not Unix
+            if line_ending != '\n':
+                content_to_write = content_to_write.replace('\n', line_ending)
+            
+            # Write with the appropriate line ending and encoding
+            with open(path, 'w', encoding='utf-8', newline='') as file:
+                file.write(content_to_write)
+            
             if self.verbose:
-                print(f"Content written to {path}")
+                line_ending_name = {
+                    '\n': 'LF (Unix)',
+                    '\r\n': 'CRLF (Windows)', 
+                    '\r': 'CR (Classic Mac)'
+                }.get(line_ending, 'Unknown')
+                print(f"Content written to {path} with {line_ending_name} line endings")
+            
             return True
+        
         except Exception as e:
             if self.verbose:
                 print(f"Error writing to file {path}: {e}")
