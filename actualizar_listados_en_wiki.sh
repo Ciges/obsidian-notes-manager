@@ -19,5 +19,8 @@ for l in comunes humv; do
     # Con el c
     cp -uav "$origen/"* "$destino" | tee -a "$LOG_FILE"
 done;
+# Actualizamos también algunos archivos CSS relacionados
+cp -uav "$SCRIPT_PATH/$OBSIDIAN_PATH/.obsidian/snippets/tags.css" "$SCRIPT_PATH/$OBSIDIAN_PATH/WIKI DE SISTEMAS CTO DE CIGES/.obsidian/snippets/" | tee -a "$LOG_FILE"
+
 
 echo "$fecha - Fin del script" >> "$LOG_FILE"
