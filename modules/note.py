@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 import yaml
 import regex
+from datetime import datetime
 
 __version__ = "0.0.2"
 
@@ -215,11 +216,13 @@ class Note:
     def _parse_frontmatter_manually(self, frontmatter: str) -> Dict[str, Any]:
         """
         Manually parse frontmatter without YAML dependency.
-        Handles both inline and multiline list formats.
+        Handles both inline and multiline list formats, and nested structures.
         """
         properties: Dict[str, Any] = {}
         lines = frontmatter.split('\n')
         i = 0
+        current_section: Dict[str, Any] = properties
+        section_stack: List[Dict[str, Any]] = [properties]
         
         while i < len(lines):
             line = lines[i].strip()
@@ -229,6 +232,17 @@ class Note:
                 i += 1
                 continue
             
+            # Count leading spaces for indentation level
+            original_line = lines[i]
+            leading_spaces = len(original_line) - len(original_line.lstrip())
+            indent_level = leading_spaces // 2  # Assuming 2 spaces per level
+            
+            # Adjust current section based on indentation
+            if indent_level < len(section_stack) - 1:
+                # Going back to a higher level
+                section_stack = section_stack[:indent_level + 1]
+            current_section = section_stack[-1]
+            
             # Check if line contains a property
             if ':' in line:
                 key, value = line.split(':', 1)
@@ -237,47 +251,61 @@ class Note:
                 
                 # Handle different value types
                 if not value:
-                    # Empty value, check if next lines are list items
+                    # Empty value, could be a section or list
+                    # Check if next lines are indented (section) or list items
+                    next_i = i + 1
+                    is_section = False
                     list_items: List[Any] = []
-                    i += 1
                     
-                    # Look for list items (lines starting with -)
-                    while i < len(lines):
-                        next_line = lines[i].strip()
-                        if next_line.startswith('- '):
-                            # Remove the "- " prefix and clean up quotes
-                            item = next_line[2:].strip()
-                            cleaned_item = self._clean_yaml_value(item)
-                            list_items.append(cleaned_item)
-                            i += 1
-                        elif next_line and not next_line.startswith(' ') and ':' in next_line:
-                            # Found next property, break
-                            break
-                        elif next_line and next_line.startswith('  ') and not next_line.startswith('- '):
-                            # Multi-line value continuation (indented)
-                            i += 1
+                    while next_i < len(lines):
+                        next_line = lines[next_i].strip()
+                        next_original = lines[next_i]
+                        next_leading_spaces = len(next_original) - len(next_original.lstrip())
+                        
+                        if not next_line:
+                            next_i += 1
+                            continue
+                        
+                        if next_leading_spaces > leading_spaces:
+                            if next_line.startswith('- '):
+                                # It's a list item
+                                item = next_line[2:].strip()
+                                cleaned_item = self._clean_yaml_value(item)
+                                list_items.append(cleaned_item)
+                                next_i += 1
+                            elif ':' in next_line:
+                                # It's a nested section
+                                is_section = True
+                                break
+                            else:
+                                next_i += 1
                         else:
-                            i += 1
+                            break
                     
-                    if list_items:
-                        properties[key] = list_items
+                    if is_section:
+                        # Create nested dictionary
+                        nested_dict: Dict[str, Any] = {}
+                        current_section[key] = nested_dict
+                        section_stack.append(nested_dict)
+                    elif list_items:
+                        current_section[key] = list_items
+                        i = next_i - 1  # Adjust index
                     else:
-                        properties[key] = None
-                    continue
-                    
+                        current_section[key] = None
+                
                 elif value.startswith('[') and value.endswith(']'):
                     # Inline list format: [item1, item2, item3]
                     list_content = value[1:-1].strip()  # Remove brackets
                     if list_content:
                         # Smart split that respects quotes
                         items: List[Any] = self._parse_inline_list(list_content)
-                        properties[key] = items
+                        current_section[key] = items
                     else:
-                        properties[key] = []
+                        current_section[key] = []
                         
                 else:
                     # Regular value
-                    properties[key] = self._clean_yaml_value(value)
+                    current_section[key] = self._clean_yaml_value(value)
         
             i += 1
         
@@ -396,7 +424,8 @@ class Note:
     def write_content(self) -> bool:
         """
         Writes the current content of the note to the note file.
-        Preserves the original line ending style.
+        Always uses LF (Unix) line endings as used by Obsidian.
+        Automatically updates the 'updated' property with current timestamp.
         Returns True if the write was successful, False otherwise.
         """
         path = self._full_path
@@ -404,39 +433,31 @@ class Note:
             raise ValueError("The full path to the note file is not set.")
 
         try:
-            # Detect the original line ending from the current content before writing
-            original_content = ""
-            if os.path.exists(path):
-                with open(path, 'r', encoding='utf-8') as file:
-                    original_content = file.read()
-        
-            # Detect the line ending style that should be used
-            line_ending = self.detect_line_ending(original_content) if original_content else '\n'
+            # Update the 'updated' property before writing
+            current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
             
-            # Prepare content with the correct line endings
+            # Only update if the content is being modified (not just read)
+            if hasattr(self, '_content'):
+                # Update the updated property in the content
+                updated_success = self.set_property("updated", current_timestamp, verbose=False)
+                if self.verbose and updated_success:
+                    print(f"Auto-updated 'updated' property to: {current_timestamp}")
+        
+            # Prepare content with Unix line endings (LF)
             content_to_write = self._content
             
-            # Normalize to Unix line endings first, then convert to target format
+            # Normalize all line endings to LF
             content_to_write = content_to_write.replace('\r\n', '\n').replace('\r', '\n')
             
-            # Convert to the target line ending format if it's not Unix
-            if line_ending != '\n':
-                content_to_write = content_to_write.replace('\n', line_ending)
-            
-            # Write with the appropriate line ending and encoding
+            # Write with LF line endings
             with open(path, 'w', encoding='utf-8', newline='') as file:
                 file.write(content_to_write)
             
             if self.verbose:
-                line_ending_name = {
-                    '\n': 'LF (Unix)',
-                    '\r\n': 'CRLF (Windows)', 
-                    '\r': 'CR (Classic Mac)'
-                }.get(line_ending, 'Unknown')
-                print(f"Content written to {path} with {line_ending_name} line endings")
+                print(f"Content written to {path} with LF (Unix) line endings")
             
             return True
-        
+            
         except Exception as e:
             if self.verbose:
                 print(f"Error writing to file {path}: {e}")
@@ -464,10 +485,7 @@ class Note:
             verbose = self.verbose
             
         # Get the current content
-        content: str = self.get_content()  # Ahora sabemos que retorna str
-        
-        # Detect the original line ending style
-        line_ending = self.detect_line_ending(content)
+        content: str = self.get_content()
         
         # Pattern to match frontmatter between --- and --- (accounting for different line endings)
         frontmatter_pattern = r'^(---(?:\r\n|\r|\n))(.*?)(^---(?:\r\n|\r|\n))'
@@ -525,12 +543,12 @@ class Note:
                 if verbose:
                     print(f"Info: Property '{property_name}' not found, adding it to frontmatter")
                 
-                # Add the new property at the end of the frontmatter body using original line endings
+                # Add the new property at the end of the frontmatter body using LF
                 # Ensure there's a newline before adding the new property
-                if frontmatter_body and not frontmatter_body.endswith(('\n', '\r\n', '\r')):
-                    new_frontmatter_body = frontmatter_body + line_ending + f'{property_name}: {new_value}{line_ending}'
+                if frontmatter_body and not frontmatter_body.endswith('\n'):
+                    new_frontmatter_body = frontmatter_body + '\n' + f'{property_name}: {new_value}\n'
                 else:
-                    new_frontmatter_body = frontmatter_body + f'{property_name}: {new_value}{line_ending}'
+                    new_frontmatter_body = frontmatter_body + f'{property_name}: {new_value}\n'
                 
                 # Reconstruct the full content with the new property
                 updated_content = content.replace(
@@ -742,7 +760,7 @@ class Note:
         if whole_word:
             # Add word boundaries to the pattern
             search_pattern = rf'\b{re.escape(pattern)}\b'
-        
+    
         # Set regex flags
         flags = 0 if case_sensitive else re.IGNORECASE
         
@@ -792,12 +810,8 @@ class Note:
             
             # Update the content if any changes were made
             if content_changed:
+                # Join with LF line endings (Unix standard)
                 new_content = '\n'.join(lines)
-                
-                # Preserve original line endings
-                line_ending = self.detect_line_ending(content)
-                if line_ending != '\n':
-                    new_content = new_content.replace('\n', line_ending)
                 
                 # Update the content using Note method
                 self.set_content(new_content)
@@ -810,7 +824,7 @@ class Note:
             else:
                 if self.verbose:
                     print(f"No matches found for pattern '{pattern}' - no replacements made")
-            
+        
             return modified_lines
             
         except re.error as e:

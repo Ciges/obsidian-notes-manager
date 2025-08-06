@@ -18,3 +18,4 @@ tasks:
   states:
     resolved: "✔️"
     closed: "🔒"
+    waiting: "⏳"
