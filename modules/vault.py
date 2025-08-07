@@ -1,9 +1,26 @@
 import os
+import sys
 import mimetypes
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
 __version__ = "0.0.1"
+
+# Add safe printing function at the top of the file
+def safe_print(message: str):
+    """Print message with Unicode character fallbacks for Windows."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        # Use UTF-8 encoding with error replacement to handle problematic characters
+        try:
+            # Try to encode as UTF-8 and print
+            encoded = message.encode('utf-8', errors='replace')
+            decoded = encoded.decode('utf-8')
+            print(decoded)
+        except:
+            # Last resort: use the system's default encoding with replacement
+            print(message.encode(sys.stdout.encoding or 'utf-8', errors='replace').decode(sys.stdout.encoding or 'utf-8'))
 
 class Vault:
     """
@@ -37,10 +54,10 @@ class Vault:
         obsidian_config_path = os.path.join(self.path, '.obsidian')
         if not os.path.exists(obsidian_config_path):
             if self.verbose:
-                print(f"Warning: No .obsidian folder found in {self.path}. This may not be a valid Obsidian vault.")
+                safe_print(f"Warning: No .obsidian folder found in {self.path}. This may not be a valid Obsidian vault.")
         
         if self.verbose:
-            print(f"Vault initialized: {self.path}")
+            safe_print(f"Vault initialized: {self.path}")
 
     def list_notes(self, search_path: Optional[str] = None, recursive: bool = True) -> List[str]:
         """
@@ -66,12 +83,12 @@ class Vault:
         # Validate the search path exists
         if not os.path.exists(target_path):
             if self.verbose:
-                print(f"Warning: Search path does not exist: {target_path}")
+                safe_print(f"Warning: Search path does not exist: {target_path}")
             return []
         
         if not os.path.isdir(target_path):
             if self.verbose:
-                print(f"Warning: Search path is not a directory: {target_path}")
+                safe_print(f"Warning: Search path is not a directory: {target_path}")
             return []
         
         notes: List[str] = []
@@ -95,13 +112,14 @@ class Vault:
                         notes.append(item_path)
             except PermissionError:
                 if self.verbose:
-                    print(f"Warning: Permission denied accessing: {target_path}")
+                    safe_print(f"Warning: Permission denied accessing: {target_path}")
+                return []
         
         # Sort the results for consistent output
         notes.sort()
         
         if self.verbose:
-            print(f"Found {len(notes)} Obsidian notes in: {target_path}")
+            safe_print(f"Found {len(notes)} Obsidian notes in: {target_path}")
         
         return notes
 
@@ -138,7 +156,7 @@ class Vault:
                 
         except Exception as e:
             if self.verbose:
-                print(f"Warning: Could not determine MIME type for {file_path}: {e}")
+                safe_print(f"Warning: Could not determine MIME type for {file_path}: {e}")
             # If we can't determine MIME type but it has .md extension, consider it valid
             return file_path.lower().endswith('.md')
         
@@ -162,10 +180,10 @@ class Vault:
                     config_dict = yaml.safe_load(file)
                     return config_dict if config_dict else {}
             else:
-                print(f"Warning: Configuration file '{config_path}' not found")
+                safe_print(f"Warning: Configuration file '{config_path}' not found")
                 return {}
         except Exception as e:
-            print(f"Error reading configuration file '{config_path}': {e}")
+            safe_print(f"Error reading configuration file '{config_path}': {e}")
             return {}
 
     @staticmethod
@@ -177,7 +195,7 @@ class Vault:
         if 'obsidian' in config and 'vault' in config['obsidian']:
             return config['obsidian']['vault']
         else:
-            print("Warning: obsidian vault not found in configuration")
+            safe_print("Warning: obsidian vault not found in configuration")
             return None
 
     def __str__(self) -> str:

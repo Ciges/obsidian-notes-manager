@@ -1,4 +1,5 @@
 import os
+import sys
 import configparser
 import json
 import mimetypes
@@ -12,6 +13,22 @@ import regex
 from datetime import datetime
 
 __version__ = "0.0.2"
+
+# Add safe printing function at the top of the file
+def safe_print(message: str):
+    """Print message with Unicode character fallbacks for Windows."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        # Use UTF-8 encoding with error replacement to handle problematic characters
+        try:
+            # Try to encode as UTF-8 and print
+            encoded = message.encode('utf-8', errors='replace')
+            decoded = encoded.decode('utf-8')
+            print(decoded)
+        except:
+            # Last resort: use the system's default encoding with replacement
+            print(message.encode(sys.stdout.encoding or 'utf-8', errors='replace').decode(sys.stdout.encoding or 'utf-8'))
 
 class Note:
     """
@@ -97,13 +114,13 @@ class Note:
             full_path = self.__calculate_full_path(path)
 
             if self.verbose:
-                print(f"Full path: {full_path}")
+                safe_print(f"Full path: {full_path}")
             if not os.path.exists(full_path):
                 raise FileNotFoundError(f"The file at {full_path} does not exist.")
 
             mimetype, _ = mimetypes.guess_type(full_path)
             if self.verbose:
-                print(f"MIME Type is: {mimetype}")
+                safe_print(f"MIME Type is: {mimetype}")
             if mimetype is None or not mimetype.startswith('text'):
                 raise ValueError(f"The file at {full_path} is not a text file.")
 
@@ -117,7 +134,7 @@ class Note:
             file_modified_time = os.path.getmtime(path)
             if self._time_read >= file_modified_time:
                 if self.verbose:
-                    print(f"File content has not been updated (mtime: {file_modified_time}), returning cached content at {self._time_read}.")
+                    safe_print(f"File content has not been updated (mtime: {file_modified_time}), returning cached content at {self._time_read}.")
                 reload = False
 
         if reload:
@@ -125,7 +142,7 @@ class Note:
                 self._time_read = time.time()
                 self._content = file.read()
                 if self.verbose:
-                    print(f"File read at {self._time_read}, content length: {len(self._content)} characters.")
+                    safe_print(f"File read at {self._time_read}, content length: {len(self._content)} characters.")
 
         self._content_reloaded = reload
         return self._content
@@ -140,7 +157,7 @@ class Note:
             full_path = self.__calculate_full_path(path)
 
             if self.verbose:
-                print(f"Full path: {full_path}")
+                safe_print(f"Full path: {full_path}")
             return self._read_file(full_path)
         else:
             if not hasattr(self, '_full_path'):
@@ -192,10 +209,10 @@ class Note:
             try:
                 self._properties = self._parse_frontmatter_manually(frontmatter)
                 if self.verbose:
-                    print("Used manual frontmatter parsing")
+                    safe_print("Used manual frontmatter parsing")
             except Exception as parse_error:
                 if self.verbose:
-                    print(f"Error in manual frontmatter parsing: {parse_error}")
+                    safe_print(f"Error in manual frontmatter parsing: {parse_error}")
     
         text = self.get_body()
         if text:
@@ -209,7 +226,7 @@ class Note:
                         self._properties[key.strip()] = value.strip() # type: ignore
                     except ValueError:
                         if self.verbose:
-                            print(f"Error parsing property: {match.group()}")
+                            safe_print(f"Error parsing property: {match.group()}")
 
         return self._properties # type: ignore
 
@@ -441,7 +458,7 @@ class Note:
                 # Update the updated property in the content
                 updated_success = self.set_property("updated", current_timestamp, verbose=False)
                 if self.verbose and updated_success:
-                    print(f"Auto-updated 'updated' property to: {current_timestamp}")
+                    safe_print(f"Auto-updated 'updated' property to: {current_timestamp}")
         
             # Prepare content with Unix line endings (LF)
             content_to_write = self._content
@@ -454,13 +471,13 @@ class Note:
                 file.write(content_to_write)
             
             if self.verbose:
-                print(f"Content written to {path} with LF (Unix) line endings")
+                safe_print(f"Content written to {path} with LF (Unix) line endings")
             
             return True
             
         except Exception as e:
             if self.verbose:
-                print(f"Error writing to file {path}: {e}")
+                safe_print(f"Error writing to file {path}: {e}")
             return False
 
     def detect_line_ending(self, input_content: Optional[str] = None) -> str:
@@ -495,7 +512,7 @@ class Note:
         
         if not frontmatter_match:
             if verbose:
-                print(f"Warning: No frontmatter found in the note")
+                safe_print(f"Warning: No frontmatter found in the note")
             return False
         
         # Extract frontmatter content
@@ -511,7 +528,7 @@ class Note:
             if new_value is None:
                 # Remove the property completely (delete the entire line)
                 if verbose:
-                    print(f"Info: Removing property '{property_name}' from frontmatter")
+                    safe_print(f"Info: Removing property '{property_name}' from frontmatter")
                 # Use flexible line ending pattern for removal
                 new_frontmatter_body = re.sub(property_pattern + r'(?:\r\n|\r|\n)?', '', frontmatter_body, flags=re.MULTILINE)
             else:
@@ -536,12 +553,12 @@ class Note:
             if new_value is None:
                 # Property doesn't exist and we want to remove it, nothing to do
                 if verbose:
-                    print(f"Info: Property '{property_name}' not found, nothing to remove")
+                    safe_print(f"Info: Property '{property_name}' not found, nothing to remove")
                 return False
             else:
                 # Property doesn't exist, add it at the end of the frontmatter
                 if verbose:
-                    print(f"Info: Property '{property_name}' not found, adding it to frontmatter")
+                    safe_print(f"Info: Property '{property_name}' not found, adding it to frontmatter")
                 
                 # Add the new property at the end of the frontmatter body using LF
                 # Ensure there's a newline before adding the new property
@@ -578,10 +595,10 @@ class Note:
                     config_dict = yaml.safe_load(file)
                     return config_dict if config_dict else {}
             else:
-                print(f"Warning: Configuration file '{config_path}' not found")
+                safe_print(f"Warning: Configuration file '{config_path}' not found")
                 return {}
         except Exception as e:
-            print(f"Error reading configuration file '{config_path}': {e}")
+            safe_print(f"Error reading configuration file '{config_path}': {e}")
             return {}
 
     @staticmethod
@@ -593,7 +610,7 @@ class Note:
         if 'obsidian' in config and 'vault' in config['obsidian']:
             return config['obsidian']['vault']
         else:
-            print("Warning: obsidian vault not found in configuration")
+            safe_print("Warning: obsidian vault not found in configuration")
             return None
 
     @staticmethod
@@ -601,28 +618,42 @@ class Note:
         """Resolve note path relative to Obsidian vault if needed."""
         if vault_path is None:
             vault_path = Note.get_obsidian_vault_path()
-        
+    
         # If vault_path is still None, return the original path
         if vault_path is None:
             if verbose:
-                print("Warning: Cannot resolve vault path, using note path as-is")
+                safe_print("Warning: Cannot resolve vault path, using note path as-is")
             return note_path
         
-        # Convert to absolute paths for comparison
-        abs_note_path = os.path.abspath(note_path)
         abs_vault_path = os.path.abspath(vault_path)
         
-        # Check if the note path is already within the vault
-        if abs_note_path.startswith(abs_vault_path):
-            if verbose:
-                print(f"Note path is already within vault: {abs_note_path}")
-            return abs_note_path
+        # Check if the note path is already absolute
+        if os.path.isabs(note_path):
+            # It's an absolute path
+            abs_note_path = os.path.abspath(note_path)
+            
+            # Check if it's already within the vault
+            if abs_note_path.startswith(abs_vault_path):
+                if verbose:
+                    safe_print(f"Absolute note path is already within vault: {abs_note_path}")
+                return abs_note_path
+            else:
+                if verbose:
+                    safe_print(f"Absolute note path is outside vault, using as-is: {abs_note_path}")
+                return abs_note_path
         else:
-            # Note path is relative to vault root
+            # It's a relative path - resolve it relative to vault root
             resolved_path = os.path.join(abs_vault_path, note_path)
             abs_resolved_path = os.path.abspath(resolved_path)
+            
+            # Add .md extension if not present
+            if not abs_resolved_path.endswith('.md'):
+                abs_resolved_path += '.md'
+                if verbose:
+                    safe_print(f"Added .md extension to resolved path")
+            
             if verbose:
-                print(f"Resolved relative path '{note_path}' to: {abs_resolved_path}")
+                safe_print(f"Resolved relative path '{note_path}' to: {abs_resolved_path}")
             return abs_resolved_path
 
     @staticmethod
@@ -631,7 +662,7 @@ class Note:
         if vault_path is None:
             vault_path = Note.get_obsidian_vault_path()
             if vault_path is None:
-                print("Error: Cannot resolve vault path for moving file")
+                safe_print("Error: Cannot resolve vault path for moving file")
                 return None
         
         # Ensure destination folder is relative to vault
@@ -642,9 +673,9 @@ class Note:
         try:
             os.makedirs(destination_path, exist_ok=True)
             if verbose:
-                print(f"Ensured destination directory exists: {destination_path}")
+                safe_print(f"Ensured destination directory exists: {destination_path}")
         except Exception as e:
-            print(f"Error creating destination directory '{destination_path}': {e}")
+            safe_print(f"Error creating destination directory '{destination_path}': {e}")
             return None
         
         # Get the filename from the note path
@@ -653,7 +684,7 @@ class Note:
         
         # Check if destination file already exists
         if os.path.exists(destination_file):
-            print(f"Warning: Destination file already exists: {destination_file}")
+            safe_print(f"Warning: Destination file already exists: {destination_file}")
             # Generate a unique filename
             base, ext = os.path.splitext(filename)
             counter = 1
@@ -662,16 +693,16 @@ class Note:
                 destination_file = os.path.join(destination_path, new_filename)
                 counter += 1
             if verbose:
-                print(f"Using unique filename: {os.path.basename(destination_file)}")
+                safe_print(f"Using unique filename: {os.path.basename(destination_file)}")
         
         # Move the file
         try:
             shutil.move(note_path, destination_file)
             if verbose:
-                print(f"Moved file from '{note_path}' to '{destination_file}'")
+                safe_print(f"Moved file from '{note_path}' to '{destination_file}'")
             return destination_file
         except Exception as e:
-            print(f"Error moving file from '{note_path}' to '{destination_file}': {e}")
+            safe_print(f"Error moving file from '{note_path}' to '{destination_file}': {e}")
             return None
 
     def find(self, pattern: str, case_sensitive: bool = True, whole_word: bool = False, group: Optional[int] = None) -> List[str]:
@@ -719,22 +750,22 @@ class Note:
                                 matching_results.append(group_content)
                         except IndexError:
                             if self.verbose:
-                                print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
+                                safe_print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
                     else:
                         # Return the complete matching line
                         matching_results.append(line)
             
             if self.verbose:
                 if group is not None:
-                    print(f"Found {len(matching_results)} group {group} matches for pattern '{pattern}'")
+                    safe_print(f"Found {len(matching_results)} group {group} matches for pattern '{pattern}'")
                 else:
-                    print(f"Found {len(matching_results)} lines matching pattern '{pattern}'")
+                    safe_print(f"Found {len(matching_results)} lines matching pattern '{pattern}'")
             
             return matching_results
             
         except re.error as e:
             if self.verbose:
-                print(f"Error in regular expression pattern '{pattern}': {e}")
+                safe_print(f"Error in regular expression pattern '{pattern}': {e}")
             return []
 
     def replace(self, pattern: str, replacement: str, case_sensitive: bool = True, whole_word: bool = False, group: Optional[int] = None) -> List[str]:
@@ -794,7 +825,7 @@ class Note:
                         new_line = compiled_pattern.sub(group_replacer, line)
                     except IndexError:
                         if self.verbose:
-                            print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
+                            safe_print(f"Warning: Group {group} not found in pattern '{pattern}' for line: {line}")
                         new_line = line
                 else:
                     # Replace the entire match
@@ -818,18 +849,18 @@ class Note:
                 
                 if self.verbose:
                     if group is not None:
-                        print(f"Replaced group {group} in {len(modified_lines)} lines using pattern '{pattern}'")
+                        safe_print(f"Replaced group {group} in {len(modified_lines)} lines using pattern '{pattern}'")
                     else:
-                        print(f"Replaced {len(modified_lines)} lines using pattern '{pattern}'")
+                        safe_print(f"Replaced {len(modified_lines)} lines using pattern '{pattern}'")
             else:
                 if self.verbose:
-                    print(f"No matches found for pattern '{pattern}' - no replacements made")
+                    safe_print(f"No matches found for pattern '{pattern}' - no replacements made")
         
             return modified_lines
             
         except re.error as e:
             if self.verbose:
-                print(f"Error in regular expression pattern '{pattern}': {e}")
+                safe_print(f"Error in regular expression pattern '{pattern}': {e}")
             return []  # Ensure the function returns an empty list in case of an error
 
     def _clean_yaml_value(self, value: str) -> Any:
@@ -878,48 +909,48 @@ class Note:
         try:
             # Check if file exists
             if not os.path.exists(file_path):
-                print(f"Error: File does not exist: {file_path}")
+                safe_print(f"Error: File does not exist: {file_path}")
                 return False
             
             # Check if it's a file (not a directory)
             if not os.path.isfile(file_path):
                 if verbose:
-                    print(f"Warning: Path is not a file: {file_path}")
+                    safe_print(f"Warning: Path is not a file: {file_path}")
                 return False
             
             # Check file extension
             _, extension = os.path.splitext(file_path)
             if extension.lower() != '.md':
                 if verbose:
-                    print(f"File does not have .md extension: {file_path} (extension: {extension})")
+                    safe_print(f"File does not have .md extension: {file_path} (extension: {extension})")
                 return False
             
             # Check MIME type
             mimetype, encoding = mimetypes.guess_type(file_path)
             if verbose:
-                print(f"File: {file_path}")
-                print(f"MIME type: {mimetype}")
-                print(f"Encoding: {encoding}")
+                safe_print(f"File: {file_path}")
+                safe_print(f"MIME type: {mimetype}")
+                safe_print(f"Encoding: {encoding}")
             
             # Verify it's a text file
             if mimetype is None:
                 if verbose:
-                    print(f"Warning: Could not determine MIME type for: {file_path}")
+                    safe_print(f"Warning: Could not determine MIME type for: {file_path}")
                 # For .md files, we can still assume it's text if MIME detection fails
                 return True
             
             if not mimetype.startswith('text'):
                 if verbose:
-                    print(f"File is not a text file (MIME: {mimetype}): {file_path}")
+                    safe_print(f"File is not a text file (MIME: {mimetype}): {file_path}")
                 return False
             
             if verbose:
-                print(f"File is a valid Obsidian note: {file_path}")
+                safe_print(f"File is a valid Obsidian note: {file_path}")
             
             return True
             
         except Exception as e:
-            print(f"Error checking file {file_path}: {e}")
+            safe_print(f"Error checking file {file_path}: {e}")
             return False
 
 

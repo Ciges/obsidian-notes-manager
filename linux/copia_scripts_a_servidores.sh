@@ -62,13 +62,18 @@ if [ ! -d "$ruta_scripts" ]; then
     exit 1
 fi
 
-# Verificar que los scripts necesarios existen en la ruta especificada
-if [ ! -f "$ruta_scripts/activa_acceso_root.sh" ] || [ ! -f "$ruta_scripts/desactiva_acceso_root.sh" ]; then
-    echo "Error: No se encontraron los scripts 'activa_acceso_root.sh' y/o 'desactiva_acceso_root.sh' en '$ruta_scripts'."
+# Verificar que hay archivos en la ruta especificada
+archivos_encontrados=$(find "$ruta_scripts" -maxdepth 1 -type f | wc -l)
+if [ "$archivos_encontrados" -eq 0 ]; then
+    echo "Error: No se encontraron archivos en '$ruta_scripts'."
     exit 1
 fi
 
-printf "Se van a copiar los scripts desde '$ruta_scripts' (subdirectorio: '$subdirectorio_scripts') a los servidores:\n"
+# Mostrar los archivos que se van a copiar
+echo "Archivos encontrados en '$ruta_scripts':"
+find "$ruta_scripts" -maxdepth 1 -type f -exec basename {} \; | sort
+
+printf "\nSe van a copiar todos los archivos desde '$ruta_scripts' (subdirectorio: '$subdirectorio_scripts') a los servidores:\n"
 for s in "${servidores[@]}"; do
     printf " - %s\n" "$s"
 done
@@ -84,10 +89,11 @@ hoy=$(date +%Y%m%d)
 
 # Ejecutamos el script en cada servidor
 for s in "${servidores[@]}"; do
-    scp "$ruta_scripts/activa_acceso_root.sh" "$ruta_scripts/desactiva_acceso_root.sh" root@${s}ges:/root/
+    echo "Copiando archivos a $s..."
+    scp "$ruta_scripts"/* root@${s}ges:/root/
     if [ $? -eq 0 ]; then
-        echo "✓ Scripts copiados a $s"
+        echo "✓ Todos los archivos copiados a $s"
     else
-        echo "✗ Error en $s"
+        echo "✗ Error al copiar archivos a $s"
     fi
 done
